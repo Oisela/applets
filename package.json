@@ -1,0 +1,6 @@
+{
+  "name": "applets",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "acorn": "^8.12.0" }
+}
