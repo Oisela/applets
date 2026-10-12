@@ -5,15 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Physik-Applets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <main class="wrap">
-    <h1>Physik-Applets</h1>
-    <p class="lead">Interaktive Applets zu Physik und Mathematik, nach Vorlesung geordnet. Jedes Applet läuft direkt im Browser, ohne Anmeldung, und lässt sich einzeln verlinken oder einbetten.</p>
+    <header class="top">
+      <p class="pname">Sammlung</p>
+      <h1><b>Physik-Applets</b></h1>
+      <p class="kicker">Interaktive Applets zu Physik und Mathematik, nach Vorlesung geordnet. Jedes Applet läuft direkt im Browser, ohne Anmeldung, und lässt sich einzeln verlinken oder einbetten.</p>
+    </header>
     <div id="faecher"></div>
   </main>
 
@@ -29,17 +32,18 @@ function render(data) {
   const box = document.getElementById('faecher');
   const F = (data.faecher || []).filter(f => (f.applets || []).length);
   if (!F.length) {
-    box.innerHTML = '<div class="card empty">Noch keine Applets veröffentlicht.</div>';
+    box.innerHTML = '<div class="empty">Noch keine Applets veröffentlicht.</div>';
     return;
   }
-  box.innerHTML = F.map(f => `
-    <details class="fach card" id="${esc(f.id)}">
+  box.innerHTML = F.map((f, i) => `
+    <details class="fach" id="${esc(f.id)}" style="--x:var(--x${i % 5 + 1})">
       <summary><h2>${esc(f.titel)}</h2><span class="count">${f.applets.length} ${f.applets.length === 1 ? 'Applet' : 'Applets'}</span></summary>
       <div class="grid">
         ${f.applets.map(a => `
-          <a class="card tile" href="applets/${esc(f.id)}/${esc(a.key)}.html">
+          <a class="tile" href="applets/${esc(f.id)}/${esc(a.key)}.html">
             <h3>${tex(a.titel)}</h3>
             ${a.text ? `<p>${tex(a.text)}</p>` : ''}
+            <span class="go">Öffnen →</span>
           </a>`).join('')}
       </div>
     </details>`).join('');

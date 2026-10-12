@@ -100,14 +100,14 @@ const out = `<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Applet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
 <style>
 ${css}
 .pub-wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 .pub-top{padding-top:4px}
-.pub-top a{font-size:15px}
+.pub-top a{font:500 14.5px var(--sans);text-decoration:none}
 </style>
 </head>
 <body>
