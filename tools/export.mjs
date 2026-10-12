@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Exportiert EIN Applet aus der Lernzentrale als eigenständige Seite.
 //
-//   node tools/export.mjs <lernzentrale.html> <key> <fach> [titel-fuer-kachel]
+//   node tools/export.mjs <lernzentrale.html> <key> <fach> --fach-titel "Optik" [--text "Ein Satz Beschreibung"]
 //
 // - <lernzentrale.html>: gespeicherte HTML der Lernzentrale (Artifact read)
 // - <key>: Schlüssel des Applets in der ANIM-Engine, z. B. lorentz
@@ -16,9 +16,13 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const acorn = require('acorn');
 
-const [src, key, fach] = process.argv.slice(2);
-if (!src || !key || !fach) {
-  console.error('Aufruf: node tools/export.mjs <lernzentrale.html> <key> <fach>');
+const argv = process.argv.slice(2);
+const opt = n => { const i = argv.indexOf(n); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, 2); return v; };
+const fachTitel = opt('--fach-titel');
+const text = opt('--text');
+const [src, key, fach] = argv;
+if (!src || !key || !fach || !/^[a-z0-9-]+$/.test(fach)) {
+  console.error('Aufruf: node tools/export.mjs <lernzentrale.html> <key> <fach> --fach-titel "Optik" [--text "…"]');
   process.exit(1);
 }
 const html = fs.readFileSync(src, 'utf8');
@@ -51,6 +55,16 @@ const isD = st => st.type === 'ExpressionStatement' && st.expression.type === 'A
 const keys = body.filter(isD).map(st => st.expression.left.property.name);
 if (!keys.includes(key)) throw new Error(`Applet "${key}" nicht gefunden. Vorhanden: ${keys.join(', ')}`);
 const block = body.find(st => isD(st) && st.expression.left.property.name === key);
+// Titel des Applets: Feld t im zurückgegebenen Objekt der Applet-Funktion
+let ANIM_TITEL = key;
+try {
+  const fn = block.expression.right.callee;
+  const ret = fn.body.body.find(x => x.type === 'ReturnStatement');
+  const tp = ret.argument.properties.find(p => p.key && (p.key.name === 't' || p.key.value === 't'));
+  const v = tp.value;
+  if (v.type === 'Literal') ANIM_TITEL = v.value;
+  else if (v.type === 'TemplateLiteral' && !v.expressions.length) ANIM_TITEL = v.quasis[0].value.cooked;
+} catch (e) { /* bleibt key */ }
 
 // Änderungen als Bereiche [von, bis, Ersatz]: andere Applets raus, Kommentare raus, info leeren
 const edits = [];
@@ -131,9 +145,10 @@ const woerter = ['Altprüfung', 'Prüfung', 'Probeprüfung', 'Klausur', 'Übungs
 const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const muster = new RegExp('(' + [...woerter, ...namen].map(esc).join('|') + ')', 'giu');
 const treffer = [];
-for (const m of out.matchAll(muster)) {
-  const a = Math.max(0, m.index - 40), b = Math.min(out.length, m.index + m[0].length + 40);
-  treffer.push(`  „${m[0]}“: …${out.slice(a, b).replace(/\s+/g, ' ')}…`);
+const pruefText = out + '\n' + (text || '') + '\n' + (fachTitel || '');
+for (const m of pruefText.matchAll(muster)) {
+  const a = Math.max(0, m.index - 40), b = Math.min(pruefText.length, m.index + m[0].length + 40);
+  treffer.push(`  „${m[0]}“: …${pruefText.slice(a, b).replace(/\s+/g, ' ')}…`);
 }
 if (treffer.length) {
   console.error(`Abbruch, ${treffer.length} Treffer. Bitte im Applet in der Lernzentrale ändern und neu exportieren:`);
@@ -146,3 +161,19 @@ fs.mkdirSync(dir, { recursive: true });
 const file = path.join(dir, key + '.html');
 fs.writeFileSync(file, out);
 console.log(`${file} (${(out.length / 1024).toFixed(0)} KB), entfernt: ${removed} andere Applets, Filter ok`);
+
+// 7) Katalog applets.json aktualisieren (Startseite liest ihn)
+const katalogDatei = path.join(tools, '..', 'applets.json');
+const katalog = fs.existsSync(katalogDatei) ? JSON.parse(fs.readFileSync(katalogDatei, 'utf8')) : { faecher: [] };
+katalog.faecher = katalog.faecher || [];
+let f = katalog.faecher.find(x => x.id === fach);
+if (!f) {
+  if (!fachTitel) { console.error('Neues Fach: bitte --fach-titel angeben (z. B. "Theoretische Physik III").'); process.exit(4); }
+  f = { id: fach, titel: fachTitel, applets: [] };
+  katalog.faecher.push(f);
+} else if (fachTitel) f.titel = fachTitel;
+const eintrag = { key, titel: ANIM_TITEL, text: text || '' };
+const alt = f.applets.findIndex(x => x.key === key);
+if (alt >= 0) f.applets[alt] = eintrag; else f.applets.push(eintrag);
+fs.writeFileSync(katalogDatei, JSON.stringify(katalog, null, 2) + '\n');
+console.log(`Katalog: ${f.titel} › ${ANIM_TITEL}`);

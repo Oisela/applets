@@ -76,6 +76,16 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .task li { margin: 6px 0; }
 footer { margin-top: 40px; color: var(--muted); font-size: .85rem; }
 
-/* Fach-Abschnitte auf der Startseite */
-.fach + .fach { margin-top: 36px; }
-.fach h2 { font-size: 1.4rem; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+/* Startseite: eine einklappbare Karte pro Vorlesung */
+#faecher { display: flex; flex-direction: column; gap: 14px; }
+details.fach { padding: 0; }
+details.fach > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 12px; padding: 18px 20px; }
+details.fach > summary::-webkit-details-marker { display: none; }
+details.fach > summary::before { content: "▸"; color: var(--accent); transition: transform .15s; display: inline-block; }
+details.fach[open] > summary::before { transform: rotate(90deg); }
+details.fach > summary h2 { margin: 0; font-size: 1.35rem; }
+details.fach > summary .count { margin-left: auto; color: var(--muted); font-size: .9rem; white-space: nowrap; }
+details.fach > summary:hover h2 { color: var(--accent); }
+details.fach > .grid { padding: 0 20px 20px; }
+details.fach .tile { background: var(--bg); }
+.empty { color: var(--muted); }

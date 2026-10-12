@@ -6,26 +6,58 @@
   <title>Physik-Applets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
   <main class="wrap">
     <h1>Physik-Applets</h1>
-    <p class="lead">Interaktive Applets zu Physik und Mathematik, nach Fach geordnet. Jedes Applet läuft direkt im Browser, ohne Anmeldung, und lässt sich einzeln verlinken oder einbetten.</p>
-
-    <!-- Pro Fach ein Abschnitt. Neues Applet: Kachel im passenden Abschnitt ergänzen. -->
-    <section class="fach">
-      <h2>Optik</h2>
-      <div class="grid">
-        <a class="card tile" href="applets/optik/doppelspalt.html">
-          <span class="tag">Wellenoptik</span>
-          <h3>Doppelspalt</h3>
-          <p>Interferenz und Beugung am Doppelspalt mit einstellbarer Wellenlänge, Spaltabstand und Spaltbreite.</p>
-        </a>
-      </div>
-    </section>
-
-    <footer>Stand: Oktober 2026</footer>
+    <p class="lead">Interaktive Applets zu Physik und Mathematik, nach Vorlesung geordnet. Jedes Applet läuft direkt im Browser, ohne Anmeldung, und lässt sich einzeln verlinken oder einbetten.</p>
+    <div id="faecher"></div>
   </main>
+
+<script>
+// Inhalt kommt aus applets.json (schreibt tools/export.mjs)
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tex = s => esc(s).replace(/\$([^$]+)\$/g, (m, y) => {
+  try { return window.katex ? katex.renderToString(y.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'), { throwOnError: false }) : m; }
+  catch (e) { return m; }
+});
+
+function render(data) {
+  const box = document.getElementById('faecher');
+  const F = (data.faecher || []).filter(f => (f.applets || []).length);
+  if (!F.length) {
+    box.innerHTML = '<div class="card empty">Noch keine Applets veröffentlicht.</div>';
+    return;
+  }
+  box.innerHTML = F.map(f => `
+    <details class="fach card" id="${esc(f.id)}">
+      <summary><h2>${esc(f.titel)}</h2><span class="count">${f.applets.length} ${f.applets.length === 1 ? 'Applet' : 'Applets'}</span></summary>
+      <div class="grid">
+        ${f.applets.map(a => `
+          <a class="card tile" href="applets/${esc(f.id)}/${esc(a.key)}.html">
+            <h3>${tex(a.titel)}</h3>
+            ${a.text ? `<p>${tex(a.text)}</p>` : ''}
+          </a>`).join('')}
+      </div>
+    </details>`).join('');
+  // Direktlink auf ein Fach (#optik) öffnet es gleich
+  const h = decodeURIComponent(location.hash.slice(1));
+  const d = h && document.getElementById(h);
+  if (d) d.open = true;
+}
+
+function start() {
+  fetch('applets.json', { cache: 'no-cache' })
+    .then(r => r.json()).then(render)
+    .catch(() => render({ faecher: [] }));
+}
+// KaTeX wird verzögert geladen; kurz darauf warten, dann rendern
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.katex) start(); else setTimeout(start, 300);
+});
+</script>
 </body>
 </html>
